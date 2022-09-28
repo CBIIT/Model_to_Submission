@@ -25,3 +25,5 @@ Options:
 	-h, --help
 		Show this help message and exit
 ```
+
+An example set of files for this script can be found in the CCDI data model directory: https://github.com/CBIIT/ccdi-model/tree/main/model-desc
