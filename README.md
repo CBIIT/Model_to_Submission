@@ -27,3 +27,7 @@ Options:
 ```
 
 An example set of files for this script can be found in the CCDI data model directory: https://github.com/CBIIT/ccdi-model/tree/main/model-desc
+
+```
+Rscript --vanilla Model_to_Submission.R -m ccdi-model.yml -p ccdi-model-props.yml -t terms.yaml
+```
