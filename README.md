@@ -31,3 +31,8 @@ An example set of files for this script can be found in the CCDI data model dire
 ```
 Rscript --vanilla Model_to_Submission.R -m ccdi-model.yml -p ccdi-model-props.yml -t terms.yaml
 ```
+
+There is also a set of example files located in this directory and the following command can be executed:
+```
+Rscript --vanilla Model_to_Submission.R -m Example_Files/ccdi-model.yml -p Example_Files/ccdi-model-props.yml -t Example_Files/ccdi-model-props_terms.yaml -r Example_README.xlsx
+```
