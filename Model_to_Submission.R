@@ -166,7 +166,6 @@ for (prop in names(model_props$PropDefinitions)){
   dd=rbind(dd,dd_add)
 }
 
-
 #Insert source ids for the properties.
 df_prop_code=data.frame(matrix(ncol = 3,nrow=0))
 df_prop_code_add=data.frame(matrix(ncol = 3,nrow=1))
@@ -229,7 +228,6 @@ for (prop in 1:dim(dd)[1]){
   }
 }
 
-
 #Fill out the node column in the DD
 for (prop in 1:length(dd$Property)){
   for (node in names(model["Nodes"][[1]])){
@@ -261,25 +259,19 @@ for (node in names(model["Nodes"][[1]])){
     if (!is.null(enum_list)){
       if (length(enum_list)>1){
         if(!prop%in%TaVS$`Value Set Name`){
-          enum_counter=0
           for (enum in enum_list){
-            if (enum_counter==0){
-              TaVS_add$`Value Set Name`=prop
-            }else{
-              TaVS_add$`Value Set Name`=NA
-            }
+            
+            TaVS_add$`Value Set Name`=prop
             TaVS_add$Term=enum
             if (enum %in% names(model_terms$Terms)){
               TaVS_add$Definition=model_terms$Terms[enum][[1]]['Definition'][[1]]
             }
             TaVS=rbind(TaVS,TaVS_add)
             TaVS_add$Definition=NA
-            enum_counter=enum_counter+1
           }
           TaVS_add$Term=NA
           TaVS_add$Definition=NA
           TaVS_add$`Value Set Name`=NA
-          TaVS=rbind(TaVS,TaVS_add)
           TaVS=rbind(TaVS,TaVS_add)
         }
       }
@@ -315,6 +307,11 @@ prop_require_style=createStyle(fontColour = "black",fgFill = "#FFF2CC" , textDec
 
 #Dictionary page styles
 dd_header_style=createStyle(fontColour = "white",fgFill = "black")
+
+#TaVS page styles
+tavs_1=createStyle(fontColour = "black",fgFill = "#DEE6F0")
+tavs_2=createStyle(fontColour = "black",fgFill = "#EEDDDC")
+tavs_blank=createStyle(fontColour= "black", fgFill = "#FFFFFF")
 
 #Write readme page
 if (!is.null(opt$readme)){
@@ -375,13 +372,25 @@ for (node in names(model$Nodes)){
 #Data validation (drop down lists)
   
 #Pull out the positions where the value set names are located
-  VSN=grep(pattern = FALSE, x = is.na(TaVS$`Value Set Name`))  
+  VSN_new=c(1)
+  VSN_counter=1
+  while(VSN_counter!=dim(TaVS)[1]){
+    if (is.na(TaVS$`Value Set Name`[VSN_counter]) & !is.na(TaVS$`Value Set Name`[(VSN_counter+1)])){
+      VSN_new=c(VSN_new,(VSN_counter+1))
+    }
+    VSN_counter=VSN_counter+1
+  }
   
+  VSN=VSN_new
+  #VSN=grep(pattern = FALSE, x = is.na(TaVS$`Value Set Name`))  
+  
+
 #for each instance of a value_set_name, note the position on the Terms and Value Sets page, create a list for each with all accepted values.
   for (prop in props){
     if (prop %in% unique(TaVS$`Value Set Name`)){
-      start_pos=grep(pattern = prop,x = TaVS$`Value Set Name`)+1
-      stop_pos=VSN[start_pos<VSN][1]-2
+      start_pos=min(grep(pattern = prop,x = TaVS$`Value Set Name`))+1
+      stop_pos=VSN[start_pos<VSN][1]-1
+      #Create restricted drop downs based on the TaVS tab.
       if (start_pos==1){
         col_pos=grep(pattern = TRUE, x = (colnames(metadata) %in% prop))
         suppressWarnings(dataValidation(wb = wb, sheet = node, cols= col_pos,rows = 2:10000, type="list",value = paste("'Terms and Value Sets'!$C$",start_pos,":$C$",stop_pos+1,sep="")))
@@ -396,6 +405,35 @@ for (node in names(model$Nodes)){
   }
 }
 
+#Setup boundaries and shifting window for groupRows feature
+# VSN=grep(pattern = FALSE, x = is.na(TaVS$`Value Set Name`))
+TaVS_row_count=0
+
+for (VSNn in 1:length(VSN)){
+  start=VSN[VSNn]+1
+  stop=VSN[VSNn+1]-1
+  
+  #Add color to rows so they alternate on the TaVS page.
+  TaVS_row_count=TaVS_row_count+1
+  if ((TaVS_row_count %% 2) == 0){
+    tavs_style = tavs_1
+  }else{
+    tavs_style = tavs_2
+  }
+  #coloring of rows
+  if (!is.na(stop_pos)){
+    addStyle(wb = wb,sheet = "Terms and Value Sets",style = tavs_style,cols = c(1:4),rows = c((start):(stop-2)), gridExpand = TRUE)
+  }else{
+    addStyle(wb = wb,sheet = "Terms and Value Sets",style = tavs_style,cols = c(1:4),rows = c(start:dim(TaVS)[1]), gridExpand = TRUE)
+  }
+  
+  #grouping of rows
+  if (!is.na(stop)){
+    groupRows(wb = wb,sheet = "Terms and Value Sets",rows = c((start+1):(stop)),hidden = TRUE)
+  }else{
+    groupRows(wb = wb,sheet = "Terms and Value Sets",rows = c((start+1):(dim(TaVS)[1])),hidden = TRUE)
+  }
+}
 
 #Write out the dictionary and TaVS pages
 writeData(wb = wb,sheet = "Dictionary",x = dd)
@@ -417,7 +455,10 @@ writeData(wb = wb,sheet = "Terms and Value Sets",x = TaVS[1,], startRow = 1, hea
 #Adjustments to the notebook to make it easier to read after initial creation.
 for (sheet in wb$sheet_names){
   setColWidths(wb = wb,cols = 1:50, sheet = sheet,widths = 25)
+  freezePane(wb = wb, sheet = sheet, firstRow = TRUE)
 }
+setColWidths(wb = wb,cols = 4, sheet = "Terms and Value Sets",widths = 200)
+
 
 #Write out workbook
 saveWorkbook(wb = wb,file = paste(path,output_file,sep = ""), overwrite = TRUE)
