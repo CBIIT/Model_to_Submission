@@ -124,6 +124,9 @@ output_file=paste(file_name,"_Submission_Template.xlsx",sep="")
 #
 #################
 
+#Create a preferred order of nodes. While hard coded, any additions to the data model will result with those nodes being placed at the end of the list.
+preferred_order=c("study","study_admin","study_arm","study_funding","study_personnel","publication","participant","diagnosis","therapeutic_procedure","sample","sequencing_file","methylation_array_file","imaging_file","clinical_measure_file","synonym")
+preferred_order=c(preferred_order,names(model$Nodes)[!names(model$Nodes) %in% preferred_order])
 
 #Create new Dictionary page
 dd=data.frame(matrix(ncol = 10,nrow=0))
@@ -165,6 +168,7 @@ for (prop in names(model_props$PropDefinitions)){
   }
   dd=rbind(dd,dd_add)
 }
+
 
 #Insert source ids for the properties.
 df_prop_code=data.frame(matrix(ncol = 3,nrow=0))
@@ -228,6 +232,7 @@ for (prop in 1:dim(dd)[1]){
   }
 }
 
+
 #Fill out the node column in the DD
 for (prop in 1:length(dd$Property)){
   for (node in names(model["Nodes"][[1]])){
@@ -242,8 +247,7 @@ dd$Required[grepl(pattern = "FALSE",x = dd$Required)]<-NA
 
 dd$Required[grep(pattern = "TRUE",x = dd$Required)]<-dd$Node[grep(pattern = "TRUE",x = dd$Required)]
 
-dd=dd[order(dd$Node,decreasing = F),]
-
+dd=dd[order(match(dd$Node,preferred_order)),]
 
 #Set up the Terms and Value Set sheet
 TaVS=data.frame(matrix(ncol = 4,nrow=0))
@@ -253,7 +257,7 @@ colnames(TaVS)<-c("Value Set Name","(subset)","Term","Definition")
 colnames(TaVS_add)<-c("Value Set Name","(subset)","Term","Definition")
 
 #Take properties and apply them to a data frame that mirrors TaVS
-for (node in names(model["Nodes"][[1]])){
+for (node in preferred_order){
   for (prop in model["Nodes"][[1]][[node]][1][["Props"]]){
     enum_list=model_props["PropDefinitions"][[1]][[prop]]["Enum"][[1]]
     if (!is.null(enum_list)){
@@ -293,7 +297,7 @@ if (!is.null(opt$readme)){
   addWorksheet(wb,"README and INSTRUCTIONS")
 }
 
-for (node in names(model$Nodes)){
+for (node in preferred_order){
   addWorksheet(wb,node)
 }
 
@@ -317,14 +321,13 @@ tavs_blank=createStyle(fontColour= "black", fgFill = "#FFFFFF")
 if (!is.null(opt$readme)){
   writeData(wb = wb,sheet = "README and INSTRUCTIONS",x = readme,colNames = FALSE)
 }
-  
-#Insert the key property linking for each node.
 
-for (node in names(model$Nodes)){
+#Insert the key property linking for each node.
+for (node in preferred_order){
   metadata=data.frame()
   running_vec=c()
   props=model["Nodes"][[1]][node][[1]]["Props"][[1]]
-
+  
   all_relationships=unlist(model$Relationships)
   node_relationships=names(all_relationships[grep(pattern = node, x = all_relationships)])
   relationships=node_relationships[grep(pattern = ".Src", x = node_relationships)]
@@ -346,7 +349,7 @@ for (node in names(model$Nodes)){
       }
     }
   }
-
+  
   #Add the type property for submission and then make the data frame
   props=c("type",props)
   props=unique(props)
@@ -368,10 +371,10 @@ for (node in names(model$Nodes)){
       writeData(wb = wb,sheet = node,x = metadata[col], headerStyle = prop_style, startCol = col)
     }
   }
-
-#Data validation (drop down lists)
   
-#Pull out the positions where the value set names are located
+  #Data validation (drop down lists)
+  
+  #Pull out the positions where the value set names are located
   VSN_new=c(1)
   VSN_counter=1
   while(VSN_counter!=dim(TaVS)[1]){
@@ -384,8 +387,8 @@ for (node in names(model$Nodes)){
   VSN=VSN_new
   #VSN=grep(pattern = FALSE, x = is.na(TaVS$`Value Set Name`))  
   
-
-#for each instance of a value_set_name, note the position on the Terms and Value Sets page, create a list for each with all accepted values.
+  
+  #for each instance of a value_set_name, note the position on the Terms and Value Sets page, create a list for each with all accepted values.
   for (prop in props){
     if (prop %in% unique(TaVS$`Value Set Name`)){
       start_pos=min(grep(pattern = prop,x = TaVS$`Value Set Name`))+1
