@@ -126,6 +126,7 @@ output_file=paste(file_name,"_Submission_Template.xlsx",sep="")
 
 #Create a preferred order of nodes. While hard coded, any additions to the data model will result with those nodes being placed at the end of the list.
 preferred_order=c("study","study_admin","study_arm","study_funding","study_personnel","publication","participant","diagnosis","therapeutic_procedure","sample","sequencing_file","methylation_array_file","imaging_file","clinical_measure_file","synonym")
+preferred_order=preferred_order[preferred_order %in% names(model$Nodes)]
 preferred_order=c(preferred_order,names(model$Nodes)[!names(model$Nodes) %in% preferred_order])
 
 #Create new Dictionary page
