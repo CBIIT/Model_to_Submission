@@ -116,7 +116,7 @@ path=paste(dirname(model_path),"/",sep = "")
 
 #Output file.
 output_file=paste(file_name,
-                  "_SubTemp",
+                  "_CCDITemp",
                   stri_replace_all_fixed(
                     str = Sys.Date(),
                     pattern = "-",
