@@ -7,7 +7,7 @@ Run the following command in a terminal where R is installed for help.
 Rscript --vanilla Model_to_Submission.R -h
 Usage: Model_to_Submission.R [options]
 
-Model_to_Submission.R version 1.0
+Model_to_Submission.R version 2.0.0
 
 Options:
 	-m CHARACTER, --model=CHARACTER
