@@ -110,12 +110,18 @@ model_terms=read_yaml(file = terms_path)
 ###########
 
 #Rework the file path to obtain a file name, this will be used for the output file.
-file_name=stri_reverse(stri_split_fixed(str = (stri_split_fixed(str = stri_reverse(model_path), pattern="/",n = 2)[[1]][1]),pattern = ".", n=2)[[1]][2])
+file_name=stri_reverse(stri_split_fixed(stri_reverse(basename(model_path)),pattern = ".", n=2)[[1]][2])
 
-path=paste(stri_reverse(stri_split_fixed(str = stri_reverse(model_path), pattern="/",n = 2)[[1]][2]),"/",sep = "")
+path=paste(dirname(model_path),"/",sep = "")
 
 #Output file.
-output_file=paste(file_name,"_Submission_Template.xlsx",sep="")
+output_file=paste(file_name,
+                  "_SubTemp",
+                  stri_replace_all_fixed(
+                    str = Sys.Date(),
+                    pattern = "-",
+                    replacement = ""),
+                  sep="")
 
 
 #################
@@ -465,6 +471,6 @@ setColWidths(wb = wb,cols = 4, sheet = "Terms and Value Sets",widths = 200)
 
 
 #Write out workbook
-saveWorkbook(wb = wb,file = paste(path,output_file,sep = ""), overwrite = TRUE)
+saveWorkbook(wb = wb,file = paste(path,output_file,".xlsx",sep = ""), overwrite = TRUE)
 
-cat(paste("\nPlease find the submission template file here: ",path,"\n\n",sep = ""))
+cat(paste("\n\nProcess Complete.\n\nThe output file can be found here: ",path,"\n\n",sep = "")) 
