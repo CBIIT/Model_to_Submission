@@ -61,7 +61,7 @@ option_list = list(
 
 
 #create list of options and values for file input
-opt_parser = OptionParser(option_list=option_list, description = "\nModel_to_Submission.R v2.0.0")
+opt_parser = OptionParser(option_list=option_list, description = "\nModel_to_Submission.R v2.0.1\n\nThis script takes the three files that make a CBIIT data model: model, properties, and terms, and creates a submission workbook with formatting and enumerated drop down menus.\n")
 opt = parse_args(opt_parser)
 
 #If no options are presented, return --help, stop and print the following message.
@@ -116,7 +116,7 @@ path=paste(dirname(model_path),"/",sep = "")
 
 #Output file.
 output_file=paste(file_name,
-                  "_CCDITemplate",
+                  "_SubTemp",
                   stri_replace_all_fixed(
                     str = Sys.Date(),
                     pattern = "-",
@@ -126,7 +126,7 @@ output_file=paste(file_name,
 
 #################
 #
-# Write out
+# Rework of data frames
 #
 #################
 
@@ -139,8 +139,8 @@ preferred_order=c(preferred_order,names(model$Nodes)[!names(model$Nodes) %in% pr
 dd=data.frame(matrix(ncol = 10,nrow=0))
 dd_add=data.frame(matrix(ncol = 10,nrow=1))
 
-colnames(dd)<-c("Property","Description","Node","Type","Example value","Required","CDE (primary)","CDE (alt)","NCIt","Other Source")
-colnames(dd_add)<-c("Property","Description","Node","Type","Example value","Required","CDE (primary)","CDE (alt)","NCIt","Other Source")
+colnames(dd)<-c("Property","Description","Node","Type","Example value","Required","CDE","CDE version","NCIt","Other Source")
+colnames(dd_add)<-c("Property","Description","Node","Type","Example value","Required","CDE","CDE version","NCIt","Other Source")
 
 #Populate Dictionary page
 for (prop in names(model_props$PropDefinitions)){
@@ -178,21 +178,23 @@ for (prop in names(model_props$PropDefinitions)){
 
 
 #Insert source ids for the properties.
-df_prop_code=data.frame(matrix(ncol = 3,nrow=0))
-df_prop_code_add=data.frame(matrix(ncol = 3,nrow=1))
+df_prop_code=data.frame(matrix(ncol = 4,nrow=0))
+df_prop_code_add=data.frame(matrix(ncol = 4,nrow=1))
 
-colnames(df_prop_code)<-c("Property","Code","Source")
-colnames(df_prop_code_add)<-c("Property","Code","Source")
+colnames(df_prop_code)<-c("Property","Code","Version","Source")
+colnames(df_prop_code_add)<-c("Property","Code","Version","Source")
 
 
 #Create list of properties and their CDE codes
 for (x in 1:length(names(model_props$PropDefinitions))){
+  
   if(any(names(model_props$PropDefinitions[[x]])%in%"Term")){
     if (any(grepl(pattern = "caDSR", x = model_props$PropDefinitions[[x]]["Term"][[1]]))){
       num_codes=grep(pattern = "caDSR", x = model_props$PropDefinitions[[x]]["Term"][[1]])
       for (y in num_codes){
         df_prop_code_add$Property=names(model_props$PropDefinitions[x])
         df_prop_code_add$Code=model_props$PropDefinitions[[x]]["Term"][[1]][[y]]["Code"][[1]]
+        df_prop_code_add$Version=model_terms$Terms[names(model_props$PropDefinitions[x])][[1]]["Version"][[1]]
         df_prop_code_add$Source="caDSR"
         df_prop_code=rbind(df_prop_code, df_prop_code_add)
       }
@@ -202,6 +204,7 @@ for (x in 1:length(names(model_props$PropDefinitions))){
       for (y in num_codes){
         df_prop_code_add$Property=names(model_props$PropDefinitions[x])
         df_prop_code_add$Code=model_props$PropDefinitions[[x]]["Term"][[1]][[y]]["Code"][[1]]
+        df_prop_code_add$Version=NA
         df_prop_code_add$Source="NCIt"
         df_prop_code=rbind(df_prop_code, df_prop_code_add)
       }
@@ -209,26 +212,25 @@ for (x in 1:length(names(model_props$PropDefinitions))){
   }
 }
 
+
 #For only caDSR and NCIt sources at this time, creates the columns that notes what the ids are for each property with these values.
 for (prop in 1:dim(dd)[1]){
   code=NA
   if (dd$Property[prop] %in% df_prop_code$Property){
     prop_df=filter(df_prop_code, Property==dd$Property[prop])
-    
     if (any(grepl(pattern = "caDSR", x = prop_df$Source))){
       prop_df_caDSR=filter(prop_df,Source=="caDSR")
-      codes=prop_df_caDSR$Code
-      if (!is.null(codes)){
-        for (code in codes){
-          if (is.na(dd$`CDE (primary)`[prop])){
-            dd$`CDE (primary)`[prop]= code
-          }else{
-            dd$`CDE (alt)`[prop]=code
+      if (!is.null(prop_df_caDSR$Code)){
+        for (code_pos in 1: dim(prop_df_caDSR)[1]){
+          code=prop_df_caDSR$Code[code_pos]
+          ver=prop_df_caDSR$Version[code_pos]
+          if (is.na(dd$CDE[prop])){
+            dd$CDE[prop]= code
+            dd$`CDE version`[prop]= ver
           }
         }
       }
     }
-    
     if (any(grepl(pattern = "NCIt", x = prop_df$Source))){
       prop_df_NCIt=filter(prop_df,Source=="NCIt")
       codes=prop_df_NCIt$Code
@@ -238,7 +240,6 @@ for (prop in 1:dim(dd)[1]){
     }
   }
 }
-
 
 #Fill out the node column in the DD
 for (prop in 1:length(dd$Property)){
@@ -409,7 +410,7 @@ for (node in preferred_order){
         suppressWarnings(dataValidation(wb = wb, sheet = node, cols= col_pos,rows = 2:10000, type="list",value = paste("'Terms and Value Sets'!$C$",start_pos,":$C$",stop_pos,sep="")))
       }else{
         col_pos=grep(pattern = TRUE, x = (colnames(metadata) %in% prop))
-        suppressWarnings(dataValidation(wb = wb, sheet = node, cols= col_pos,rows = 2:10000, type="list",value = paste("'Terms and Value Sets'!$C$",start_pos,":$C$",dim(TaVS)[1]-1,sep="")))
+        suppressWarnings(dataValidation(wb = wb, sheet = node, cols= col_pos,rows = 2:10000, type="list",value = paste("'Terms and Value Sets'!$C$",start_pos,":$C$",dim(TaVS)[1],sep="")))
       }
     }
   }
