@@ -136,11 +136,11 @@ preferred_order=preferred_order[preferred_order %in% names(model$Nodes)]
 preferred_order=c(preferred_order,names(model$Nodes)[!names(model$Nodes) %in% preferred_order])
 
 #Create new Dictionary page
-dd=data.frame(matrix(ncol = 10,nrow=0))
-dd_add=data.frame(matrix(ncol = 10,nrow=1))
+dd=data.frame(matrix(ncol = 11,nrow=0))
+dd_add=data.frame(matrix(ncol = 11,nrow=1))
 
-colnames(dd)<-c("Property","Description","Node","Type","Example value","Required","CDE","CDE version","NCIt","Other Source")
-colnames(dd_add)<-c("Property","Description","Node","Type","Example value","Required","CDE","CDE version","NCIt","Other Source")
+colnames(dd)<-c("Property","Description","Node","Type","Example value","Required","Key","CDE","CDE version","NCIt","Other Source")
+colnames(dd_add)<-c("Property","Description","Node","Type","Example value","Required","Key","CDE","CDE version","NCIt","Other Source")
 
 #Populate Dictionary page
 for (prop in names(model_props$PropDefinitions)){
@@ -168,11 +168,20 @@ for (prop in names(model_props$PropDefinitions)){
     dd_add$`Example value`=NA
   }
   
+  #Add the required marker
   if (is.null(model_props["PropDefinitions"][[1]][prop][[1]]["Req"][[1]])){
     dd_add$Required=NA
   }else{
     dd_add$Required=model_props["PropDefinitions"][[1]][prop][[1]]["Req"][[1]]
   }
+  
+  #Add the Key marker
+  if (is.null(model_props["PropDefinitions"][[1]][prop][[1]]["Key"][[1]])){
+    dd_add$Key=NA
+  }else{
+    dd_add$Key=model_props["PropDefinitions"][[1]][prop][[1]]["Key"][[1]]
+  }
+  
   dd=rbind(dd,dd_add)
 }
 
