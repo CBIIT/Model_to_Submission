@@ -442,7 +442,7 @@ for (VSNn in 1:length(VSN)){
   }
   #coloring of rows
   if (!is.na(stop_pos)){
-    addStyle(wb = wb,sheet = "Terms and Value Sets",style = tavs_style,cols = c(1:4),rows = c((start):(stop-2)), gridExpand = TRUE)
+    addStyle(wb = wb,sheet = "Terms and Value Sets",style = tavs_style,cols = c(1:4),rows = c((start):(dim(TaVS)[1])), gridExpand = TRUE)
   }else{
     addStyle(wb = wb,sheet = "Terms and Value Sets",style = tavs_style,cols = c(1:4),rows = c(start:dim(TaVS)[1]), gridExpand = TRUE)
   }
