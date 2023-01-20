@@ -61,7 +61,7 @@ option_list = list(
 
 
 #create list of options and values for file input
-opt_parser = OptionParser(option_list=option_list, description = "\nModel_to_Submission.R v2.0.1\n\nThis script takes the three files that make a CBIIT data model: model, properties, and terms, and creates a submission workbook with formatting and enumerated drop down menus.\n")
+opt_parser = OptionParser(option_list=option_list, description = "\nModel_to_Submission.R v2.0.2\n\nThis script takes the three files that make a CBIIT data model: model, properties, and terms, and creates a submission workbook with formatting and enumerated drop down menus.\n")
 opt = parse_args(opt_parser)
 
 #If no options are presented, return --help, stop and print the following message.
@@ -136,11 +136,11 @@ preferred_order=preferred_order[preferred_order %in% names(model$Nodes)]
 preferred_order=c(preferred_order,names(model$Nodes)[!names(model$Nodes) %in% preferred_order])
 
 #Create new Dictionary page
-dd=data.frame(matrix(ncol = 11,nrow=0))
-dd_add=data.frame(matrix(ncol = 11,nrow=1))
+dd=data.frame(matrix(ncol = 9,nrow=0))
+dd_add=data.frame(matrix(ncol = 9,nrow=1))
 
-colnames(dd)<-c("Property","Description","Node","Type","Example value","Required","Key","CDE","CDE version","NCIt","Other Source")
-colnames(dd_add)<-c("Property","Description","Node","Type","Example value","Required","Key","CDE","CDE version","NCIt","Other Source")
+colnames(dd)<-c("Property","Description","Node","Type","Example value","Required","Key","CDE","CDE version")
+colnames(dd_add)<-c("Property","Description","Node","Type","Example value","Required","Key","CDE","CDE version")
 
 #Populate Dictionary page
 for (prop in names(model_props$PropDefinitions)){
@@ -208,16 +208,6 @@ for (x in 1:length(names(model_props$PropDefinitions))){
         df_prop_code=rbind(df_prop_code, df_prop_code_add)
       }
     }
-    if(any(grepl(pattern = "NCIt", x = model_props$PropDefinitions[[x]]["Term"][[1]]))){
-      num_codes=grep(pattern = "NCIt", x = model_props$PropDefinitions[[x]]["Term"][[1]])
-      for (y in num_codes){
-        df_prop_code_add$Property=names(model_props$PropDefinitions[x])
-        df_prop_code_add$Code=model_props$PropDefinitions[[x]]["Term"][[1]][[y]]["Code"][[1]]
-        df_prop_code_add$Version=NA
-        df_prop_code_add$Source="NCIt"
-        df_prop_code=rbind(df_prop_code, df_prop_code_add)
-      }
-    }
   }
 }
 
@@ -238,13 +228,6 @@ for (prop in 1:dim(dd)[1]){
             dd$`CDE version`[prop]= ver
           }
         }
-      }
-    }
-    if (any(grepl(pattern = "NCIt", x = prop_df$Source))){
-      prop_df_NCIt=filter(prop_df,Source=="NCIt")
-      codes=prop_df_NCIt$Code
-      if (!is.null(codes)){
-        dd$NCIt[prop]=codes
       }
     }
   }
