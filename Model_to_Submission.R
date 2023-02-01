@@ -61,7 +61,7 @@ option_list = list(
 
 
 #create list of options and values for file input
-opt_parser = OptionParser(option_list=option_list, description = "\nModel_to_Submission.R v2.0.2\n\nThis script takes the three files that make a CBIIT data model: model, properties, and terms, and creates a submission workbook with formatting and enumerated drop down menus.\n")
+opt_parser = OptionParser(option_list=option_list, description = "\nModel_to_Submission.R v2.0.3\n\nThis script takes the three files that make a CBIIT data model: model, properties, and terms, and creates a submission workbook with formatting and enumerated drop down menus.\n")
 opt = parse_args(opt_parser)
 
 #If no options are presented, return --help, stop and print the following message.
@@ -308,6 +308,7 @@ addWorksheet(wb,"Terms and Value Sets")
 node_style=createStyle(fontColour = "black", fgFill = "#E7E6E6", textDecoration = "Italic")
 prop_style=createStyle(fontColour = "#595959", fgFill = "white")
 prop_require_style=createStyle(fontColour = "black",fgFill = "#FFF2CC" , textDecoration = "Bold")
+text_format=createStyle(numFmt = "TEXT")
 
 #Dictionary page styles
 dd_header_style=createStyle(fontColour = "white",fgFill = "black")
@@ -396,16 +397,17 @@ for (node in preferred_order){
       #Create restricted drop downs based on the TaVS tab.
       if (start_pos==1){
         col_pos=grep(pattern = TRUE, x = (colnames(metadata) %in% prop))
-        suppressWarnings(dataValidation(wb = wb, sheet = node, cols= col_pos,rows = 2:10000, type="list",value = paste("'Terms and Value Sets'!$C$",start_pos,":$C$",stop_pos+1,sep="")))
+        suppressWarnings(dataValidation(wb = wb, sheet = node, cols= col_pos,rows = 2:50000, type="list",value = paste("'Terms and Value Sets'!$C$",start_pos,":$C$",stop_pos+1,sep="")))
       }else if (!is.na(stop_pos)){
         col_pos=grep(pattern = TRUE, x = (colnames(metadata) %in% prop))
-        suppressWarnings(dataValidation(wb = wb, sheet = node, cols= col_pos,rows = 2:10000, type="list",value = paste("'Terms and Value Sets'!$C$",start_pos,":$C$",stop_pos,sep="")))
+        suppressWarnings(dataValidation(wb = wb, sheet = node, cols= col_pos,rows = 2:50000, type="list",value = paste("'Terms and Value Sets'!$C$",start_pos,":$C$",stop_pos,sep="")))
       }else{
         col_pos=grep(pattern = TRUE, x = (colnames(metadata) %in% prop))
-        suppressWarnings(dataValidation(wb = wb, sheet = node, cols= col_pos,rows = 2:10000, type="list",value = paste("'Terms and Value Sets'!$C$",start_pos,":$C$",dim(TaVS)[1],sep="")))
+        suppressWarnings(dataValidation(wb = wb, sheet = node, cols= col_pos,rows = 2:50000, type="list",value = paste("'Terms and Value Sets'!$C$",start_pos,":$C$",dim(TaVS)[1],sep="")))
       }
     }
   }
+  addStyle(wb = wb, sheet = node, style = text_format,rows = 2:50000, cols = 1:length(props), gridExpand = TRUE)
 }
 
 #Setup boundaries and shifting window for groupRows feature
