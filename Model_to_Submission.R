@@ -397,17 +397,17 @@ for (node in preferred_order){
       #Create restricted drop downs based on the TaVS tab.
       if (start_pos==1){
         col_pos=grep(pattern = TRUE, x = (colnames(metadata) %in% prop))
-        suppressWarnings(dataValidation(wb = wb, sheet = node, cols= col_pos,rows = 2:50000, type="list",value = paste("'Terms and Value Sets'!$C$",start_pos,":$C$",stop_pos+1,sep="")))
+        suppressWarnings(dataValidation(wb = wb, sheet = node, cols= col_pos,rows = 2:20000, type="list",value = paste("'Terms and Value Sets'!$C$",start_pos,":$C$",stop_pos+1,sep="")))
       }else if (!is.na(stop_pos)){
         col_pos=grep(pattern = TRUE, x = (colnames(metadata) %in% prop))
-        suppressWarnings(dataValidation(wb = wb, sheet = node, cols= col_pos,rows = 2:50000, type="list",value = paste("'Terms and Value Sets'!$C$",start_pos,":$C$",stop_pos,sep="")))
+        suppressWarnings(dataValidation(wb = wb, sheet = node, cols= col_pos,rows = 2:20000, type="list",value = paste("'Terms and Value Sets'!$C$",start_pos,":$C$",stop_pos,sep="")))
       }else{
         col_pos=grep(pattern = TRUE, x = (colnames(metadata) %in% prop))
-        suppressWarnings(dataValidation(wb = wb, sheet = node, cols= col_pos,rows = 2:50000, type="list",value = paste("'Terms and Value Sets'!$C$",start_pos,":$C$",dim(TaVS)[1],sep="")))
+        suppressWarnings(dataValidation(wb = wb, sheet = node, cols= col_pos,rows = 2:20000, type="list",value = paste("'Terms and Value Sets'!$C$",start_pos,":$C$",dim(TaVS)[1],sep="")))
       }
     }
   }
-  addStyle(wb = wb, sheet = node, style = text_format,rows = 2:50000, cols = 1:length(props), gridExpand = TRUE)
+  addStyle(wb = wb, sheet = node, style = text_format,rows = 2:20000, cols = 1:length(props), gridExpand = TRUE)
 }
 
 #Setup boundaries and shifting window for groupRows feature
