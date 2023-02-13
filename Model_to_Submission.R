@@ -308,6 +308,7 @@ addWorksheet(wb,"Terms and Value Sets")
 node_style=createStyle(fontColour = "black", fgFill = "#E7E6E6", textDecoration = "Italic")
 prop_style=createStyle(fontColour = "#595959", fgFill = "white")
 prop_require_style=createStyle(fontColour = "black",fgFill = "#FFF2CC" , textDecoration = "Bold")
+prop_link_admin_style=createStyle(fontColour = "black",fgFill = "#DCD0FF", textDecoration = "Bold")
 text_format=createStyle(numFmt = "TEXT")
 
 #Dictionary page styles
@@ -365,7 +366,7 @@ for (node in preferred_order){
   #Metadata sheets style apply
   for (col in 1:dim(metadata)[2]){
     if (colnames(metadata[col])=="type" | grepl(pattern = "\\.", x = colnames(metadata[col]))){
-      writeData(wb = wb,sheet = node,x = metadata[col], headerStyle = prop_require_style, startCol = col)
+      writeData(wb = wb,sheet = node,x = metadata[col], headerStyle = prop_link_admin_style, startCol = col)
     }else if (colnames(metadata[col])%in%dd$Property[!is.na(dd$Required)]){
       writeData(wb = wb,sheet = node,x = metadata[col], headerStyle = prop_require_style, startCol = col)
     }else{
