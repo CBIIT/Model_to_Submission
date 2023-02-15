@@ -147,22 +147,40 @@ for (prop in names(model_props$PropDefinitions)){
   type_test=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]
   enum_test=model_props["PropDefinitions"][[1]][prop][[1]]["Enum"][[1]]
   
+  oneOf_types=c()
+  
+  oneOf_types=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]
+  
+  #This section handles the new "oneOf" setups in the data model and will break apart a type list to either get the data types or the enum list.
+  if (is.list(type_test)){
+    oneOf_types=c()
+    for (list_part in 1:length(type_test)){
+      if (length(type_test[[list_part]])!=1){
+        enum_test=type_test[[list_part]]
+        oneOf_types=c(oneOf_types,"enum")
+      }else{
+        oneOf_types=c(oneOf_types,type_test[[list_part]])
+      }
+    }
+  } 
+  
   dd_add$Property=prop
   dd_add$Description=model_props["PropDefinitions"][[1]][prop][[1]]["Desc"][[1]]
   
+  #Adds type for non-enumerated values.
   if (!is.null(type_test)){
-    dd_add$Type=paste(unlist(model_props["PropDefinitions"][[1]][prop][[1]]["Type"],recursive = T,use.names = F),collapse = ";")
+    dd_add$Type=paste(unique(oneOf_types), collapse = ";")
   }else{
     dd_add$Type=NA
   }
   #Checks for enumerated values and then creates a partial list for the data dictionary page.
   if (!is.null(enum_test)){
-    dd_add$Type="enum"
-    enums=unlist(model_props["PropDefinitions"][[1]][prop][[1]]["Enum"],recursive = T,use.names = F)
-    if (length(enums)>4){
-      dd_add$`Example value`=paste(paste(enums[1:4],collapse = ";"),";etc (see Terms and Values Sets)",sep="")
+    oneOf_types=unique(c(oneOf_types,"enum"))
+    dd_add$Type=paste(oneOf_types, collapse = ";")
+    if (length(enum_test)>4){
+      dd_add$`Example value`=paste(paste(enum_test[1:4],collapse = ";"),";etc (see Terms and Values Sets)",sep="")
     }else{
-      dd_add$`Example value`=paste(enums,collapse = ";")
+      dd_add$`Example value`=paste(enum_test,collapse = ";")
     }
   }else{
     dd_add$`Example value`=NA
@@ -260,6 +278,18 @@ colnames(TaVS_add)<-c("Value Set Name","(subset)","Term","Definition")
 for (node in preferred_order){
   for (prop in model["Nodes"][[1]][[node]][1][["Props"]]){
     enum_list=model_props["PropDefinitions"][[1]][[prop]]["Enum"][[1]]
+    
+    type_list=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]
+    
+    #This section handles the new "oneOf" setups in the data model and will break apart a type list to either get the data types or the enum list.
+    if (is.list(type_list)){
+      for (list_part in 1:length(type_list)){
+        if (length(type_list[[list_part]])!=1){
+          enum_list=type_list[[list_part]]
+        }
+      }
+    } 
+    
     if (!is.null(enum_list)){
       if (length(enum_list)>1){
         if(!prop%in%TaVS$`Value Set Name`){
