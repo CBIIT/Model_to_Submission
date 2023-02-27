@@ -222,6 +222,9 @@ for (x in 1:length(names(model_props$PropDefinitions))){
         df_prop_code_add$Property=names(model_props$PropDefinitions[x])
         df_prop_code_add$Code=model_props$PropDefinitions[[x]]["Term"][[1]][[y]]["Code"][[1]]
         df_prop_code_add$Version=model_terms$Terms[names(model_props$PropDefinitions[x])][[1]]["Version"][[1]]
+        if (is.null(df_prop_code_add$Version)){
+          df_prop_code_add$Version=NA
+        }
         df_prop_code_add$Source="caDSR"
         df_prop_code=rbind(df_prop_code, df_prop_code_add)
       }
