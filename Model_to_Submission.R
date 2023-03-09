@@ -258,7 +258,13 @@ for (prop in 1:dim(dd)[1]){
 for (prop in 1:length(dd$Property)){
   for (node in names(model["Nodes"][[1]])){
     if (dd$Property[prop] %in% model["Nodes"][[1]][node][[1]][[1]]){
-      dd$Node[prop]=node
+      if (is.na(dd$Node[prop])){
+        dd$Node[prop]=node
+      }else{
+        dd_add_prop=dd[prop,]
+        dd_add_prop$Node=node
+        dd=rbind(dd,dd_add_prop)
+      }
     }
   }
 }
