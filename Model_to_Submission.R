@@ -61,7 +61,7 @@ option_list = list(
 
 
 #create list of options and values for file input
-opt_parser = OptionParser(option_list=option_list, description = "\nModel_to_Submission.R v2.0.4\n\nThis script takes the three files that make a CBIIT data model: model, properties, and terms, and creates a submission workbook with formatting and enumerated drop down menus.\n")
+opt_parser = OptionParser(option_list=option_list, description = "\nModel_to_Submission.R v2.0.5\n\nThis script takes the three files that make a CBIIT data model: model, properties, and terms, and creates a submission workbook with formatting and enumerated drop down menus.\n")
 opt = parse_args(opt_parser)
 
 #If no options are presented, return --help, stop and print the following message.
@@ -258,7 +258,13 @@ for (prop in 1:dim(dd)[1]){
 for (prop in 1:length(dd$Property)){
   for (node in names(model["Nodes"][[1]])){
     if (dd$Property[prop] %in% model["Nodes"][[1]][node][[1]][[1]]){
-      dd$Node[prop]=node
+      if (is.na(dd$Node[prop])){
+        dd$Node[prop]=node
+      }else{
+        dd_add_prop=dd[prop,]
+        dd_add_prop$Node=node
+        dd=rbind(dd,dd_add_prop)
+      }
     }
   }
 }
