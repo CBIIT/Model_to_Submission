@@ -61,7 +61,7 @@ option_list = list(
 
 
 #create list of options and values for file input
-opt_parser = OptionParser(option_list=option_list, description = "\nModel_to_Submission.R v2.0.5\n\nThis script takes the three files that make a CBIIT data model: model, properties, and terms, and creates a submission workbook with formatting and enumerated drop down menus.\n")
+opt_parser = OptionParser(option_list=option_list, description = "\nModel_to_Submission.R v2.0.6\n\nThis script takes the three files that make a CBIIT data model: model, properties, and terms, and creates a submission workbook with formatting and enumerated drop down menus.\n")
 opt = parse_args(opt_parser)
 
 #If no options are presented, return --help, stop and print the following message.
@@ -95,7 +95,7 @@ cat("The submission template file is being created at this time.\n")
 ###############
 
 if (!is.null(opt$readme)){
-  readme=read.xlsx(xlsxFile =  readme_path,sheet = 1,colNames = F)
+  readme=openxlsx::read.xlsx(xlsxFile =  readme_path,sheet = 1,colNames = F)
 }
 
 
@@ -144,47 +144,9 @@ colnames(dd_add)<-c("Property","Description","Node","Type","Example value","Requ
 
 #Populate Dictionary page
 for (prop in names(model_props$PropDefinitions)){
-  type_test=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]
-  enum_test=model_props["PropDefinitions"][[1]][prop][[1]]["Enum"][[1]]
-  
-  oneOf_types=c()
-  
-  oneOf_types=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]
-  
-  #This section handles the new "oneOf" setups in the data model and will break apart a type list to either get the data types or the enum list.
-  if (is.list(type_test)){
-    oneOf_types=c()
-    for (list_part in 1:length(type_test)){
-      if (length(type_test[[list_part]])!=1){
-        enum_test=type_test[[list_part]]
-        oneOf_types=c(oneOf_types,"enum")
-      }else{
-        oneOf_types=c(oneOf_types,type_test[[list_part]])
-      }
-    }
-  } 
-  
+  #add the easy elements
   dd_add$Property=prop
   dd_add$Description=model_props["PropDefinitions"][[1]][prop][[1]]["Desc"][[1]]
-  
-  #Adds type for non-enumerated values.
-  if (!is.null(type_test)){
-    dd_add$Type=paste(unique(oneOf_types), collapse = ";")
-  }else{
-    dd_add$Type=NA
-  }
-  #Checks for enumerated values and then creates a partial list for the data dictionary page.
-  if (!is.null(enum_test)){
-    oneOf_types=unique(c(oneOf_types,"enum"))
-    dd_add$Type=paste(oneOf_types, collapse = ";")
-    if (length(enum_test)>4){
-      dd_add$`Example value`=paste(paste(enum_test[1:4],collapse = ";"),";etc (see Terms and Values Sets)",sep="")
-    }else{
-      dd_add$`Example value`=paste(enum_test,collapse = ";")
-    }
-  }else{
-    dd_add$`Example value`=NA
-  }
   
   #Add the required marker
   if (is.null(model_props["PropDefinitions"][[1]][prop][[1]]["Req"][[1]])){
@@ -200,6 +162,98 @@ for (prop in names(model_props$PropDefinitions)){
     dd_add$Key=model_props["PropDefinitions"][[1]][prop][[1]]["Key"][[1]]
   }
   
+  
+  
+  #Determine the property type
+  #This requires either looking for a type or enum.
+  #If type is a list, then it is a oneOf list, and it could have multiple elements, usually one being an enum.
+  #If type is an 'array', then we have to look at 'items' to determine if they are 'strings', 'numbers', 'integers', etc... or if there is a set of enums included as well.
+  
+  type_test=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]
+  enum_test=model_props["PropDefinitions"][[1]][prop][[1]]["Enum"][[1]]
+  
+  oneOf_types=c()
+  
+  oneOf_types=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]
+  
+  #checks to see if there is an array
+  if (length(type_test)==1){
+    if (type_test=="array"){
+      items=model_props["PropDefinitions"][[1]][prop][[1]]["Items"][[1]]
+      #if there are multple parts that are accepted in the array
+      if (is.list(items)){
+        for (item in 1:length(items)){
+          if (length(items[[item]])!=1){
+            enum_test=items[[item]]
+            oneOf_types=c(oneOf_types,"enum")
+          }else{
+            oneOf_types=c(oneOf_types,items[[item]])
+          }
+        }
+      }else{
+        #or if there is just one type of an array (only enums, only strings)
+        if (length(items)!=1){
+          enum_test=items
+          oneOf_types=c(oneOf_types,"enum")
+        }else{
+          oneOf_types=c(oneOf_types,items)
+        }
+      }
+    }
+  }
+  
+  #This section handles the new "oneOf" setups in the data model and will break apart a type list to either get the data types or the enum list.
+  if (is.list(type_test)){
+    oneOf_types=c()
+    for (list_part in 1:length(type_test)){
+      if (length(type_test[[list_part]])!=1){
+        enum_test=type_test[[list_part]]
+        oneOf_types=c(oneOf_types,"enum")
+      }else{
+        oneOf_types=c(oneOf_types,type_test[[list_part]])
+      }
+    }
+  } 
+
+  
+  #Adds type for non-enumerated values.
+  if (!is.null(type_test)){
+    #setup special format for array to show ex: array(string;enum)
+    if (length(type_test)==1){
+      if (type_test=='array'){
+        oneOf_types=unique(oneOf_types)
+        oneOf_types=oneOf_types[!grepl(pattern = "array", x = oneOf_types)]
+        dd_add$Type=paste("array[",paste(unique(oneOf_types), collapse = ";"),"]",sep = "")
+      }else{
+        dd_add$Type=paste(unique(oneOf_types), collapse = ";")
+      }
+    }else{
+      dd_add$Type=paste(unique(oneOf_types), collapse = ";")
+    }
+    #check to see if it is an enum if it doesn't have a type.
+  }else if (!is.null(enum_test)){
+    oneOf_types=unique(c(oneOf_types,"enum"))
+    dd_add$Type=paste(oneOf_types, collapse = ";")
+  }else{
+    dd_add$Type=NA
+  }
+  
+  
+  
+  #Checks for enumerated values and then creates a partial list for the data dictionary page.
+  if (!is.null(enum_test)){
+    if (length(enum_test)>4){
+      dd_add$`Example value`=paste(paste(enum_test[1:4],collapse = ";"),";etc (see Terms and Values Sets)",sep="")
+    }else{
+      dd_add$`Example value`=paste(enum_test,collapse = ";")
+    }
+  }else{
+    dd_add$`Example value`=NA
+  }
+  
+
+  
+  #Adds the new row to the dd_df
   dd=rbind(dd,dd_add)
 }
 
