@@ -351,7 +351,23 @@ for (node in preferred_order){
           enum_list=type_list[[list_part]]
         }
       }
-    } 
+    }else if (!is.null(type_list)){
+      if(unique(type_list == 'array')){
+        #setup to handle arrays with single items that might be lost in a non-array oneOf setup.
+        items=model_props["PropDefinitions"][[1]][[prop]]["Items"][[1]]
+        if (is.list(items)){
+          for (item_part in 1:length(items)){
+            if (length(items[[item_part]])!=1){
+              enum_list=items[[item_part]]
+            }
+          }
+        }else{
+          #if just an array of enums, list items as enums
+          enum_list=items
+        }
+      }
+    }
+    
     
     if (!is.null(enum_list)){
       if (length(enum_list)>1){
