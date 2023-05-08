@@ -61,7 +61,7 @@ option_list = list(
 
 
 #create list of options and values for file input
-opt_parser = OptionParser(option_list=option_list, description = "\nModel_to_Submission.R v2.0.6\n\nThis script takes the three files that make a CBIIT data model: model, properties, and terms, and creates a submission workbook with formatting and enumerated drop down menus.\n")
+opt_parser = OptionParser(option_list=option_list, description = "\nModel_to_Submission.R v2.0.7\n\nThis script takes the three files that make a CBIIT data model: model, properties, and terms, and creates a submission workbook with formatting and enumerated drop down menus.\n")
 opt = parse_args(opt_parser)
 
 #If no options are presented, return --help, stop and print the following message.
@@ -351,7 +351,23 @@ for (node in preferred_order){
           enum_list=type_list[[list_part]]
         }
       }
-    } 
+    }else if (!is.null(type_list)){
+      if(unique(type_list == 'array')){
+        #setup to handle arrays with single items that might be lost in a non-array oneOf setup.
+        items=model_props["PropDefinitions"][[1]][[prop]]["Items"][[1]]
+        if (is.list(items)){
+          for (item_part in 1:length(items)){
+            if (length(items[[item_part]])!=1){
+              enum_list=items[[item_part]]
+            }
+          }
+        }else{
+          #if just an array of enums, list items as enums
+          enum_list=items
+        }
+      }
+    }
+    
     
     if (!is.null(enum_list)){
       if (length(enum_list)>1){
