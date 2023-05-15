@@ -371,17 +371,27 @@ for (node in preferred_order){
     
     if (!is.null(enum_list)){
       if (length(enum_list)>1){
-        if(!prop%in%TaVS$`Value Set Name`){
+        if(!(prop%in%TaVS$`Value Set Name`)){
           for (enum in enum_list){
             
             TaVS_add$`Value Set Name`=prop
             TaVS_add$Term=enum
             if (enum %in% names(model_terms$Terms)){
-              TaVS_add$Definition=model_terms$Terms[enum][[1]]['Definition'][[1]]
+              #Test to see if there is a definition value
+              definition_value = model_terms$Terms[enum][[1]]['Definition'][[1]]
+              #if there is
+              if (!is.null(definition_value)){
+                TaVS_add$Definition=definition_value
+                #if there isn't
+              }else{
+                TaVS_add$Definition=""
+              }
+              
             }
             TaVS=rbind(TaVS,TaVS_add)
             TaVS_add$Definition=NA
           }
+          
           TaVS_add$Term=NA
           TaVS_add$Definition=NA
           TaVS_add$`Value Set Name`=NA
