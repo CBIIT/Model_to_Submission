@@ -482,7 +482,7 @@ for (node in preferred_order){
   for (col in 1:dim(metadata)[2]){
     if (colnames(metadata[col])=="type" | grepl(pattern = "\\.", x = colnames(metadata[col]))){
       writeData(wb = wb,sheet = node,x = metadata[col], headerStyle = prop_link_admin_style, startCol = col)
-    }else if (grepl(pattern = "dcf_indexd_guid", x = colnames(metadata[col]))){
+    }else if (grepl(pattern = "dcf_indexd_guid", x = colnames(metadata[col])) | grepl(pattern = "file_url_in_cds", x = colnames(metadata[col]))){
       writeData(wb = wb,sheet = node,x = metadata[col], headerStyle = prop_ccdi_admin_style, startCol = col)
     }else if (colnames(metadata[col])%in%dd$Property[!is.na(dd$Required)]){
       writeData(wb = wb,sheet = node,x = metadata[col], headerStyle = prop_require_style, startCol = col)
