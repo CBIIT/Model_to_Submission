@@ -61,7 +61,7 @@ option_list = list(
 
 
 #create list of options and values for file input
-opt_parser = OptionParser(option_list=option_list, description = "\nModel_to_Submission.R v2.0.7\n\nThis script takes the three files that make a CBIIT data model: model, properties, and terms, and creates a submission workbook with formatting and enumerated drop down menus.\n")
+opt_parser = OptionParser(option_list=option_list, description = "\nModel_to_Submission.R v2.1.0\n\nThis script takes the three files that make a CBIIT data model: model, properties, and terms, and creates a submission workbook with formatting and enumerated drop down menus.\n")
 opt = parse_args(opt_parser)
 
 #If no options are presented, return --help, stop and print the following message.
@@ -131,7 +131,7 @@ output_file=paste(file_name,
 #################
 
 #Create a preferred order of nodes. While hard coded, any additions to the data model will result with those nodes being placed at the end of the list.
-preferred_order=c("study","study_admin","study_arm","study_funding","study_personnel","publication","participant","family_relationship","diagnosis","therapeutic_procedure","medical_history","exposure",'radiology_file',"follow_up","molecular_test","sample","sample_diagnosis","pdx","cell_line","sequencing_file","clinical_measure_file","methylation_array_file","pathology_file","single_cell_sequencing_file","synonym")
+preferred_order=c("study","study_admin","study_arm","study_funding","study_personnel","publication","participant","family_relationship","diagnosis","therapeutic_procedure","medical_history","exposure",'radiology_file',"follow_up","molecular_test","sample","cell_line","pdx","sequencing_file","clinical_measure_file","methylation_array_file","pathology_file","single_cell_sequencing_file","synonym")
 preferred_order=preferred_order[preferred_order %in% names(model$Nodes)]
 preferred_order=c(preferred_order,names(model$Nodes)[!names(model$Nodes) %in% preferred_order])
 
@@ -162,93 +162,88 @@ for (prop in names(model_props$PropDefinitions)){
     dd_add$Key=model_props["PropDefinitions"][[1]][prop][[1]]["Key"][[1]]
   }
   
-  
-  
   #Determine the property type
-  #This requires either looking for a type or enum.
-  #If type is a list, then it is a oneOf list, and it could have multiple elements, usually one being an enum.
-  #If type is an 'array', then we have to look at 'items' to determine if they are 'strings', 'numbers', 'integers', etc... or if there is a set of enums included as well.
-  
-  type_test=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]
-  enum_test=model_props["PropDefinitions"][[1]][prop][[1]]["Enum"][[1]]
-  
-  oneOf_types=c()
-  
-  oneOf_types=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]
-  
-  #checks to see if there is an array
-  if (length(type_test)==1){
-    if (type_test=="array"){
-      items=model_props["PropDefinitions"][[1]][prop][[1]]["Items"][[1]]
-      #if there are multple parts that are accepted in the array
-      if (is.list(items)){
-        for (item in 1:length(items)){
-          if (length(items[[item]])!=1){
-            enum_test=items[[item]]
-            oneOf_types=c(oneOf_types,"enum")
-          }else{
-            oneOf_types=c(oneOf_types,items[[item]])
+    type_test=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]
+    enum_test=model_props["PropDefinitions"][[1]][prop][[1]]["Enum"][[1]]
+    strict_test=model_props["PropDefinitions"][[1]][prop][[1]]['Strict'][[1]]
+    
+    #secondary property type tests
+    array_test=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]['value_type'][[1]]
+    array_enum_test=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]['Enum'][[1]]
+    array_type_test=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]['Type'][[1]]
+    
+    #if these secondary tests are NA, they need to be NULL instead for later checks
+    if (!is.null(array_test)){
+      if (any(is.na(array_test))){
+        array_test=NULL
+      }
+    }
+    
+    if (!is.null(array_enum_test)){
+      if (any(is.na(array_enum_test))){
+        array_enum_test=NULL
+      }
+    }
+    
+    if (!is.null(array_type_test)){
+      if (any(is.na(array_type_test))){
+        array_type_test=NULL
+      }
+    }
+    
+    
+   
+    
+    
+
+    #if type test is one long, then it is only a type
+    if (length(type_test)==1){
+      dd_add$Type=type_test
+      #if there are more facets to type it is likely an array
+    }else if (length(type_test)!=1){
+      #we should then check that it isn't an enum first
+      if (length(enum_test)>0){
+        dd_add$Type="enum"
+        #if it is, we then should check if it is strict false the we add strings to the enum type
+        if (!strict_test){
+          dd_add$Type="string;enum"
+        }
+        #double checking the array test that we see a list
+      }else if (array_test=="list"){
+        #if the array type test is not null, that means there is a type value and it is an array of ints, nums, strings, bools, etc.
+        if (!is.null(array_type_test)){
+          dd_add$Type=paste("array[",array_type_test,"]", sep = "")
+          #if it is null, then we should expect to see an enum section
+        }else if (length(array_enum_test)>0){
+          dd_add$Type="array[enum]"
+          #if there is a strict flag false then we add strings to the array of enum types
+          if (!strict_test){
+            dd_add$Type="array[string;enum]"
           }
         }
-      }else{
-        #or if there is just one type of an array (only enums, only strings)
-        if (length(items)!=1){
-          enum_test=items
-          oneOf_types=c(oneOf_types,"enum")
-        }else{
-          oneOf_types=c(oneOf_types,items)
-        }
-      }
-    }
-  }
-  
-  #This section handles the new "oneOf" setups in the data model and will break apart a type list to either get the data types or the enum list.
-  if (is.list(type_test)){
-    oneOf_types=c()
-    for (list_part in 1:length(type_test)){
-      if (length(type_test[[list_part]])!=1){
-        enum_test=type_test[[list_part]]
-        oneOf_types=c(oneOf_types,"enum")
-      }else{
-        oneOf_types=c(oneOf_types,type_test[[list_part]])
-      }
-    }
-  } 
-
-  
-  #Adds type for non-enumerated values.
-  if (!is.null(type_test)){
-    #setup special format for array to show ex: array(string;enum)
-    if (length(type_test)==1){
-      if (type_test=='array'){
-        oneOf_types=unique(oneOf_types)
-        oneOf_types=oneOf_types[!grepl(pattern = "array", x = oneOf_types)]
-        dd_add$Type=paste("array[",paste(unique(oneOf_types), collapse = ";"),"]",sep = "")
-      }else{
-        dd_add$Type=paste(unique(oneOf_types), collapse = ";")
       }
     }else{
-      dd_add$Type=paste(unique(oneOf_types), collapse = ";")
+      #ERROR, Should never get here
+      cat("ERROR: Something has changed in the Data Model, there is a type that is not expected or a structure that is new.")
     }
-    #check to see if it is an enum if it doesn't have a type.
-  }else if (!is.null(enum_test)){
-    oneOf_types=unique(c(oneOf_types,"enum"))
-    dd_add$Type=paste(oneOf_types, collapse = ";")
-  }else{
-    dd_add$Type=NA
-  }
-  
-  
-  
+    
   #Checks for enumerated values and then creates a partial list for the data dictionary page.
-  if (!is.null(enum_test)){
-    if (length(enum_test)>4){
-      dd_add$`Example value`=paste(paste(enum_test[1:4],collapse = ";"),";etc (see Terms and Values Sets)",sep="")
-    }else{
-      dd_add$`Example value`=paste(enum_test,collapse = ";")
+  if (!is.null(enum_test) | !is.null(array_enum_test)){
+    if (!is.null(enum_test)){
+      if (length(enum_test)>4){
+        dd_add$`Example value`=paste(paste(enum_test[1:4],collapse = ";"),";etc (see Terms and Values Sets)",sep="")
+      }else{
+        dd_add$`Example value`=paste(enum_test,collapse = ";")
+      }
+    }else if (!is.null(array_enum_test)){
+      if (length(array_enum_test)>4){
+        dd_add$`Example value`=paste(paste(array_enum_test[1:4],collapse = ";"),";etc (see Terms and Values Sets)",sep="")
+      }else{
+        dd_add$`Example value`=paste(array_enum_test,collapse = ";")
+      }
     }
   }else{
-    dd_add$`Example value`=NA
+    dd_add$`Example value`=""
   }
   
 
@@ -428,6 +423,7 @@ node_style=createStyle(fontColour = "black", fgFill = "#E7E6E6", textDecoration 
 prop_style=createStyle(fontColour = "#595959", fgFill = "white")
 prop_require_style=createStyle(fontColour = "black",fgFill = "#FFF2CC" , textDecoration = "Bold")
 prop_link_admin_style=createStyle(fontColour = "black",fgFill = "#DCD0FF", textDecoration = "Bold")
+prop_ccdi_admin_style=createStyle(fontColour = "black",fgFill = "#DEFFF7", textDecoration = "Bold")
 text_format=createStyle(numFmt = "TEXT")
 
 #Dictionary page styles
@@ -486,6 +482,8 @@ for (node in preferred_order){
   for (col in 1:dim(metadata)[2]){
     if (colnames(metadata[col])=="type" | grepl(pattern = "\\.", x = colnames(metadata[col]))){
       writeData(wb = wb,sheet = node,x = metadata[col], headerStyle = prop_link_admin_style, startCol = col)
+    }else if (grepl(pattern = "dcf_indexd_guid", x = colnames(metadata[col]))){
+      writeData(wb = wb,sheet = node,x = metadata[col], headerStyle = prop_ccdi_admin_style, startCol = col)
     }else if (colnames(metadata[col])%in%dd$Property[!is.na(dd$Required)]){
       writeData(wb = wb,sheet = node,x = metadata[col], headerStyle = prop_require_style, startCol = col)
     }else{
