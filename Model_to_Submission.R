@@ -191,11 +191,6 @@ for (prop in names(model_props$PropDefinitions)){
       }
     }
     
-    
-   
-    
-    
-
     #if type test is one long, then it is only a type
     if (length(type_test)==1){
       dd_add$Type=type_test
@@ -474,20 +469,24 @@ for (node in preferred_order){
   metadata=data.frame(matrix(ncol=metadata_length, nrow=1))
   colnames(metadata)<-props
   metadata$type=node
+  metadata = metadata%>%
+    select(-ends_with('.id'), everything())
   
   #Write out each node
   writeData(wb = wb, sheet = node, x=metadata)
   
   #Metadata sheets style apply
   for (col in 1:dim(metadata)[2]){
-    if (colnames(metadata[col])=="type" | grepl(pattern = "\\.", x = colnames(metadata[col]))){
-      writeData(wb = wb,sheet = node,x = metadata[col], headerStyle = prop_link_admin_style, startCol = col)
-    }else if (grepl(pattern = "dcf_indexd_guid", x = colnames(metadata[col])) | grepl(pattern = "file_url_in_cds", x = colnames(metadata[col]))){
-      writeData(wb = wb,sheet = node,x = metadata[col], headerStyle = prop_ccdi_admin_style, startCol = col)
-    }else if (colnames(metadata[col])%in%dd$Property[!is.na(dd$Required)]){
+    if (colnames(metadata[col])%in%dd$Property[!is.na(dd$Required)]){
       writeData(wb = wb,sheet = node,x = metadata[col], headerStyle = prop_require_style, startCol = col)
     }else{
       writeData(wb = wb,sheet = node,x = metadata[col], headerStyle = prop_style, startCol = col)
+    }
+    if (colnames(metadata[col])=="type" | grepl(pattern = "\\.", x = colnames(metadata[col]))){
+      writeData(wb = wb,sheet = node,x = metadata[col], headerStyle = prop_link_admin_style, startCol = col)
+    }
+    if (grepl(pattern = "dcf_indexd_guid", x = colnames(metadata[col])) | grepl(pattern = "file_url_in_cds", x = colnames(metadata[col])) | grepl(pattern = TRUE, x = colnames(metadata[col]) %in% "id") | grepl(pattern = "\\.id", x = colnames(metadata[col]))){
+      writeData(wb = wb,sheet = node,x = metadata[col], headerStyle = prop_ccdi_admin_style, startCol = col)
     }
   }
   
