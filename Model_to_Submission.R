@@ -170,7 +170,7 @@ for (prop in names(model_props$PropDefinitions)){
   #secondary property type tests
   array_test=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]['value_type'][[1]]
   array_type_test=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]['Type'][[1]]
-  array_enum_test=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]['Enum'][[1]]
+
   
   #if these secondary tests are NA, they need to be NULL instead for later checks
   if (!is.null(array_test)){
@@ -179,9 +179,9 @@ for (prop in names(model_props$PropDefinitions)){
     }
   }
   
-  if (!is.null(array_enum_test)){
-    if (any(is.na(array_enum_test))){
-      array_enum_test=NULL
+  if (!is.null(enum_test)){
+    if (any(is.na(enum_test))){
+      enum_test=NULL
     }
   }
   
@@ -210,7 +210,7 @@ for (prop in names(model_props$PropDefinitions)){
       if (!is.null(array_type_test)){
         dd_add$Type=paste("array[",array_type_test,"]", sep = "")
         #if it is null, then we should expect to see an enum section
-      }else if (length(array_enum_test)>0){
+      }else if (length(enum_test)>0){
         dd_add$Type="array[enum]"
         #if there is a strict flag false then we add strings to the array of enum types
         if (!strict_test){
@@ -224,18 +224,18 @@ for (prop in names(model_props$PropDefinitions)){
   }
   
   #Checks for enumerated values and then creates a partial list for the data dictionary page.
-  if (!is.null(enum_test) | !is.null(array_enum_test)){
+  if (!is.null(enum_test) | !is.null(enum_test)){
     if (!is.null(enum_test)){
       if (length(enum_test)>4){
         dd_add$`Example value`=paste(paste(enum_test[1:4],collapse = ";"),";etc (see Terms and Values Sets)",sep="")
       }else{
         dd_add$`Example value`=paste(enum_test,collapse = ";")
       }
-    }else if (!is.null(array_enum_test)){
-      if (length(array_enum_test)>4){
-        dd_add$`Example value`=paste(paste(array_enum_test[1:4],collapse = ";"),";etc (see Terms and Values Sets)",sep="")
+    }else if (!is.null(enum_test)){
+      if (length(enum_test)>4){
+        dd_add$`Example value`=paste(paste(enum_test[1:4],collapse = ";"),";etc (see Terms and Values Sets)",sep="")
       }else{
-        dd_add$`Example value`=paste(array_enum_test,collapse = ";")
+        dd_add$`Example value`=paste(enum_test,collapse = ";")
       }
     }
   }else{
