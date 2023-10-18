@@ -61,7 +61,7 @@ option_list = list(
 
 
 #create list of options and values for file input
-opt_parser = OptionParser(option_list=option_list, description = "\nModel_to_Submission.R v2.2.0\n\nThis script takes the three files that make a CBIIT data model: model, properties, and terms, and creates a submission workbook with formatting and enumerated drop down menus.\n")
+opt_parser = OptionParser(option_list=option_list, description = "\nModel_to_Submission.R v2.2.1\n\nThis script takes the three files that make a CBIIT data model: model, properties, and terms, and creates a submission workbook with formatting and enumerated drop down menus.\n")
 opt = parse_args(opt_parser)
 
 #If no options are presented, return --help, stop and print the following message.
@@ -163,85 +163,86 @@ for (prop in names(model_props$PropDefinitions)){
   }
   
   #Determine the property type
-    type_test=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]
-    enum_test=model_props["PropDefinitions"][[1]][prop][[1]]["Enum"][[1]]
-    strict_test=model_props["PropDefinitions"][[1]][prop][[1]]['Strict'][[1]]
-    
-    #secondary property type tests
-    array_test=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]['value_type'][[1]]
-    array_enum_test=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]['Enum'][[1]]
-    array_type_test=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]['Type'][[1]]
-    
-    #if these secondary tests are NA, they need to be NULL instead for later checks
-    if (!is.null(array_test)){
-      if (any(is.na(array_test))){
-        array_test=NULL
-      }
+  type_test=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]
+  enum_test=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]["Enum"][[1]]
+  strict_test=model_props["PropDefinitions"][[1]][prop][[1]]['Strict'][[1]]
+  
+  #secondary property type tests
+  array_test=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]['value_type'][[1]]
+  array_type_test=model_props["PropDefinitions"][[1]][prop][[1]]["Type"][[1]]['Type'][[1]]
+
+  
+  #if these secondary tests are NA, they need to be NULL instead for later checks
+  if (!is.null(array_test)){
+    if (any(is.na(array_test))){
+      array_test=NULL
     }
-    
-    if (!is.null(array_enum_test)){
-      if (any(is.na(array_enum_test))){
-        array_enum_test=NULL
-      }
+  }
+  
+  if (!is.null(enum_test)){
+    if (any(is.na(enum_test))){
+      enum_test=NULL
     }
-    
-    if (!is.null(array_type_test)){
-      if (any(is.na(array_type_test))){
-        array_type_test=NULL
-      }
+  }
+  
+  if (!is.null(array_type_test)){
+    if (any(is.na(array_type_test))){
+      array_type_test=NULL
     }
-    
-    #if type test is one long, then it is only a type
-    if (length(type_test)==1){
-      dd_add$Type=type_test
-      #if there are more facets to type it is likely an array
-    }else if (length(type_test)!=1){
-      #we should then check that it isn't an enum first
-      if (length(enum_test)>0){
-        dd_add$Type="enum"
-        #if it is, we then should check if it is strict false the we add strings to the enum type
+  }
+  
+  #if type test is one long, then it is only a type
+  if (length(type_test)==1){
+    dd_add$Type=type_test
+    #if there are more facets to type it is likely an array
+  }else if (length(type_test)!=1){
+    #we should then check that it isn't an enum first
+    if (length(enum_test)>0){
+      dd_add$Type="enum"
+      #if it is, we then should check if it is strict false the we add strings to the enum type
+      if (!strict_test){
+        dd_add$Type="string;enum"
+      }
+      #double checking the array test that we see a list
+    }
+    if (array_test=="list"){
+      #if the array type test is not null, that means there is a type value and it is an array of ints, nums, strings, bools, etc.
+      if (!is.null(array_type_test)){
+        dd_add$Type=paste("array[",array_type_test,"]", sep = "")
+        #if it is null, then we should expect to see an enum section
+      }else if (length(enum_test)>0){
+        dd_add$Type="array[enum]"
+        #if there is a strict flag false then we add strings to the array of enum types
         if (!strict_test){
-          dd_add$Type="string;enum"
-        }
-        #double checking the array test that we see a list
-      }else if (array_test=="list"){
-        #if the array type test is not null, that means there is a type value and it is an array of ints, nums, strings, bools, etc.
-        if (!is.null(array_type_test)){
-          dd_add$Type=paste("array[",array_type_test,"]", sep = "")
-          #if it is null, then we should expect to see an enum section
-        }else if (length(array_enum_test)>0){
-          dd_add$Type="array[enum]"
-          #if there is a strict flag false then we add strings to the array of enum types
-          if (!strict_test){
-            dd_add$Type="array[string;enum]"
-          }
+          dd_add$Type="array[string;enum]"
         }
       }
-    }else{
-      #ERROR, Should never get here
-      cat("ERROR: Something has changed in the Data Model, there is a type that is not expected or a structure that is new.")
     }
-    
+  }else{
+    #ERROR, Should never get here
+    cat("ERROR: Something has changed in the Data Model, there is a type that is not expected or a structure that is new.")
+  }
+  
   #Checks for enumerated values and then creates a partial list for the data dictionary page.
-  if (!is.null(enum_test) | !is.null(array_enum_test)){
+  if (!is.null(enum_test) | !is.null(enum_test)){
     if (!is.null(enum_test)){
       if (length(enum_test)>4){
         dd_add$`Example value`=paste(paste(enum_test[1:4],collapse = ";"),";etc (see Terms and Values Sets)",sep="")
       }else{
         dd_add$`Example value`=paste(enum_test,collapse = ";")
       }
-    }else if (!is.null(array_enum_test)){
-      if (length(array_enum_test)>4){
-        dd_add$`Example value`=paste(paste(array_enum_test[1:4],collapse = ";"),";etc (see Terms and Values Sets)",sep="")
+    }else if (!is.null(enum_test)){
+      if (length(enum_test)>4){
+        dd_add$`Example value`=paste(paste(enum_test[1:4],collapse = ";"),";etc (see Terms and Values Sets)",sep="")
       }else{
-        dd_add$`Example value`=paste(array_enum_test,collapse = ";")
+        dd_add$`Example value`=paste(enum_test,collapse = ";")
       }
     }
   }else{
     dd_add$`Example value`=""
   }
   
-
+  
   
   #Adds the new row to the dd_df
   dd=rbind(dd,dd_add)
